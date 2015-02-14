@@ -16,6 +16,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	fmt.Printf("Servic: Starting server for directory '%s' on :%d\n", staticFolder, port)
 	if err := server(staticFolder, port); err != nil {
 		fmt.Println(err)
 	}
