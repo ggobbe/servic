@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,36 +11,48 @@ import (
 )
 
 func main() {
-	argsLen := len(os.Args)
-	if argsLen < 2 || argsLen > 3 {
-		fmt.Printf("Usage: %s [dir] ([port])\n", os.Args[0])
+	staticFolder, port, err := processArgs(os.Args)
+	if err != nil {
+		fmt.Println(err)
 		return
+	}
+	if err := server(staticFolder, port); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func server(staticFolder string, port int) error {
+	r := mux.NewRouter()
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir(staticFolder)))
+	http.Handle("/", r)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+		return fmt.Errorf("Error listening on port %d\n  %s", port, err)
+	}
+	return nil
+}
+
+func processArgs(args []string) (string, int, error) {
+	argsLen := len(args)
+	if argsLen < 2 || argsLen > 3 {
+		return "", 0, fmt.Errorf("Usage: %s [dir] ([port])", os.Args[0])
 	}
 	staticFolder := os.Args[1]
 	port := 8080
 	if argsLen > 2 {
 		p, err := strconv.Atoi(os.Args[2])
 		if err != nil || p < 1 || p > 65535 {
-			fmt.Println("port isn't in range [1-65535]")
-			return
+			return "", 0, errors.New("port isn't in range [1-65535]")
 		}
 		port = p
 	}
 	exists, err := exists(staticFolder)
 	if err != nil {
-		fmt.Printf("Error whilst checking if directory '%s' exists\n  %s\n", staticFolder, err)
-		return
+		return "", 0, fmt.Errorf("Error whilst checking if directory '%s' exists\n  %s", staticFolder, err)
 	}
 	if !exists {
-		fmt.Printf("Directory '%s' doesn't exists.\n", staticFolder)
-		return
+		return "", 0, fmt.Errorf("Directory '%s' doesn't exists", staticFolder)
 	}
-	r := mux.NewRouter()
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir(staticFolder)))
-	http.Handle("/", r)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
-		fmt.Printf("Error listening on port %d\n  %s\n", port, err)
-	}
+	return staticFolder, port, nil
 }
 
 func exists(path string) (bool, error) {
