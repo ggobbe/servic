@@ -1,7 +1,7 @@
 # servic
-**servic** is a very tiny web server written in Go and using the net/http package.
+**servic** is a tiny web server written in Go and using the net/http package.
 
-It can only serve static files by pointing it at a folder container the files you want to serve.
+It can only serve static files by pointing it at the folder containing the files you want to serve.
 
 Usage: `servic [dir] ([port])`
 
